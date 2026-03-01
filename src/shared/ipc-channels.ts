@@ -12,4 +12,8 @@ export const IPC = {
   STATE_REQUEST_SAVE: 'state:requestSave',
   HOOK_STATUS: 'hook:status',
   DISCOVER_TERMINALS: 'terminals:discover',
+  GET_SETTINGS: 'settings:get',
+  SET_SETTINGS: 'settings:set',
+  OPEN_WARP: 'warp:open',
+  FOCUS_WARP: 'warp:focus',
 } as const;

@@ -22,6 +22,12 @@ export type SessionStatus =
   | 'standby'
   | 'waiting-for-input';
 
+export type TerminalBackend = 'xterm' | 'warp';
+
+export interface AppSettings {
+  terminalBackend: TerminalBackend;
+}
+
 export interface PtyCreateOptions {
   cols: number;
   rows: number;
@@ -92,6 +98,10 @@ export interface AirportApi {
   onRequestSave: (callback: () => void) => () => void;
   onHookStatus: (callback: (event: HookStatusEvent) => void) => () => void;
   discoverTerminals: () => Promise<ExternalTerminal[]>;
+  getSettings: () => Promise<AppSettings>;
+  setSettings: (settings: AppSettings) => Promise<void>;
+  openWarp: (cwd: string) => Promise<void>;
+  focusWarp: () => Promise<void>;
 }
 
 declare global {
