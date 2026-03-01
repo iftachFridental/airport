@@ -1,11 +1,13 @@
 import { ipcMain, BrowserWindow } from 'electron';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import fs from 'node:fs';
 import path from 'node:path';
 import { PtyManager } from './pty-manager';
 import { IPC } from '../shared/ipc-channels';
-import { PtyCreateOptions, SessionInfo, SavedState, ExternalTerminal } from '../shared/types';
+import { PtyCreateOptions, SessionInfo, SavedState, ExternalTerminal, AppSettings } from '../shared/types';
 import { saveState, loadState } from './state-manager';
+import { loadSettings, saveSettings } from './settings-manager';
 
 const execFileAsync = promisify(execFile);
 
@@ -158,5 +160,27 @@ export function registerIpcHandlers(ptyManager: PtyManager, getWindow: () => Bro
 
   ipcMain.handle(IPC.STATE_LOAD, () => {
     return loadState();
+  });
+
+  ipcMain.handle(IPC.GET_SETTINGS, () => {
+    return loadSettings();
+  });
+
+  ipcMain.handle(IPC.SET_SETTINGS, (_event, settings: AppSettings) => {
+    saveSettings(settings);
+  });
+
+  ipcMain.handle(IPC.OPEN_WARP, async (_event, cwd: string) => {
+    const args = ['-a', 'Warp'];
+    if (cwd && fs.existsSync(cwd)) args.push(cwd);
+    try {
+      await execFileAsync('open', args);
+    } catch { /* Warp not installed — ignore */ }
+  });
+
+  ipcMain.handle(IPC.FOCUS_WARP, async () => {
+    try {
+      await execFileAsync('open', ['-a', 'Warp']);
+    } catch { /* ignore */ }
   });
 }

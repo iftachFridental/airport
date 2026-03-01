@@ -10,7 +10,11 @@ import {
 } from '../lib/terminal-factory';
 import { detectStandby } from '../lib/standby-detector';
 import { parseStatus } from '../lib/status-parser';
-import type { SavedSession } from '../../shared/types';
+import type { SavedSession, TerminalBackend } from '../../shared/types';
+
+// Module-level backend setting, initialised once by App on mount.
+let _backend: TerminalBackend = 'warp';
+export function setTerminalBackend(b: TerminalBackend) { _backend = b; }
 
 const lastLines = new Map<string, string[]>();
 const lastChunks = new Map<string, string>();
@@ -237,6 +241,10 @@ export function usePtyBridge() {
     }
     const sessionId = await window.airport.pty.create({ cols, rows, cwd });
     createShadowTerminal(sessionId, cols, rows);
+
+    if (_backend === 'warp') {
+      window.airport.openWarp(cwd || '');
+    }
 
     // If restoring a buffer, write it to the shadow terminal
     if (options?.buffer) {

@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
+import type { TerminalBackend } from '../../shared/types';
 
 interface SessionControlsProps {
   onNewSession: () => void;
   onAdoptTerminals: () => void;
+  terminalBackend: TerminalBackend;
+  onSetBackend: (b: TerminalBackend) => void;
 }
 
-export function SessionControls({ onNewSession, onAdoptTerminals }: SessionControlsProps) {
+export function SessionControls({ onNewSession, onAdoptTerminals, terminalBackend, onSetBackend }: SessionControlsProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -115,6 +118,42 @@ export function SessionControls({ onNewSession, onAdoptTerminals }: SessionContr
           >
             Bring All Terminals Home
           </button>
+
+          <div style={{ height: 1, background: '#45475a', margin: '0 8px' }} />
+
+          {(['warp', 'xterm'] as TerminalBackend[]).map((b) => (
+            <button
+              key={b}
+              onClick={() => {
+                setMenuOpen(false);
+                onSetBackend(b);
+              }}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                background: 'transparent',
+                color: terminalBackend === b ? '#89b4fa' : '#cdd6f4',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 13,
+                fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                textAlign: 'left',
+                transition: 'background 0.15s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = '#45475a';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'transparent';
+              }}
+            >
+              <span style={{ opacity: terminalBackend === b ? 1 : 0 }}>✓</span>
+              {b === 'warp' ? 'Warp' : 'Built-in (xterm)'}
+            </button>
+          ))}
         </div>
       )}
     </div>

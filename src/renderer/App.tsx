@@ -1,11 +1,13 @@
 import { useEffect, useCallback, useState, useRef } from 'react';
 import { TitleBar } from './components/TitleBar';
 import { MainTerminal } from './components/MainTerminal';
+import { WarpTerminalView } from './components/WarpTerminalView';
 import { TerminalSquareGrid } from './components/TerminalSquareGrid';
 import { SessionControls } from './components/SessionControls';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { useTerminalStore } from './store/terminal-store';
-import { usePtyBridge } from './hooks/usePtyBridge';
+import { usePtyBridge, setTerminalBackend } from './hooks/usePtyBridge';
+import type { TerminalBackend } from '../shared/types';
 
 const DEFAULT_SIDEBAR_WIDTH = 384; // 320 * 1.2
 const MIN_SIDEBAR_WIDTH = 200;
@@ -15,17 +17,28 @@ export function App() {
   const { sessions, activeSessionId, previousSessionId, setActiveSession } = useTerminalStore();
   const { createSession, closeSession, setMainDimensions, restoreState, clearTerminal } = usePtyBridge();
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
+  const [terminalBackend, setBackendState] = useState<TerminalBackend>('warp');
   const dragging = useRef(false);
 
-  // Restore previous state (no auto-create — show onboarding if empty)
+  // Load settings and restore previous state on mount
   useEffect(() => {
-    restoreState();
+    window.airport.getSettings().then((settings) => {
+      setBackendState(settings.terminalBackend);
+      setTerminalBackend(settings.terminalBackend);
+      restoreState();
+    });
   }, []);
 
   const handleNewSession = useCallback(async () => {
     const id = await createSession();
     useTerminalStore.getState().setActiveSession(id);
   }, [createSession]);
+
+  const handleSetBackend = useCallback(async (b: TerminalBackend) => {
+    setBackendState(b);
+    setTerminalBackend(b);
+    await window.airport.setSettings({ terminalBackend: b });
+  }, []);
 
   const handleAdoptTerminals = useCallback(async () => {
     const terminals = await window.airport.discoverTerminals();
@@ -182,11 +195,15 @@ export function App() {
               onAdoptTerminals={handleAdoptTerminals}
             />
           ) : activeSessionId ? (
-            <MainTerminal
-              key={activeSessionId}
-              sessionId={activeSessionId}
-              onDimensions={handleDimensions}
-            />
+            terminalBackend === 'warp' ? (
+              <WarpTerminalView key={activeSessionId} sessionId={activeSessionId} />
+            ) : (
+              <MainTerminal
+                key={activeSessionId}
+                sessionId={activeSessionId}
+                onDimensions={handleDimensions}
+              />
+            )
           ) : null}
         </div>
 
@@ -226,7 +243,12 @@ export function App() {
           <TerminalSquareGrid
             onClose={closeSession}
           />
-          <SessionControls onNewSession={handleNewSession} onAdoptTerminals={handleAdoptTerminals} />
+          <SessionControls
+            onNewSession={handleNewSession}
+            onAdoptTerminals={handleAdoptTerminals}
+            terminalBackend={terminalBackend}
+            onSetBackend={handleSetBackend}
+          />
         </div>
       </div>
     </div>

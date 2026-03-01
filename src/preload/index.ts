@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { IPC } from '../shared/ipc-channels';
-import type { PtyCreateOptions, PtyDataEvent, PtyExitEvent, HookStatusEvent, AirportApi, SessionInfo, SavedState, ExternalTerminal } from '../shared/types';
+import type { PtyCreateOptions, PtyDataEvent, PtyExitEvent, HookStatusEvent, AirportApi, SessionInfo, SavedState, ExternalTerminal, AppSettings } from '../shared/types';
 
 const api: AirportApi = {
   pty: {
@@ -49,6 +49,14 @@ const api: AirportApi = {
     ipcRenderer.on(IPC.HOOK_STATUS, handler);
     return () => ipcRenderer.removeListener(IPC.HOOK_STATUS, handler);
   },
+  getSettings: (): Promise<AppSettings> =>
+    ipcRenderer.invoke(IPC.GET_SETTINGS),
+  setSettings: (settings: AppSettings): Promise<void> =>
+    ipcRenderer.invoke(IPC.SET_SETTINGS, settings),
+  openWarp: (cwd: string): Promise<void> =>
+    ipcRenderer.invoke(IPC.OPEN_WARP, cwd),
+  focusWarp: (): Promise<void> =>
+    ipcRenderer.invoke(IPC.FOCUS_WARP),
 };
 
 contextBridge.exposeInMainWorld('airport', api);
