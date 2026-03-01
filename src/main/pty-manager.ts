@@ -29,20 +29,24 @@ export class PtyManager {
     const statusFile = path.join(STATUS_DIR, `${id}.status`);
     const shell = process.env.SHELL || '/bin/zsh';
 
+    // Validate cwd exists — a stale cached path (e.g. deleted worktree) causes posix_spawnp to fail
+    const requestedCwd = options.cwd || process.env.HOME || '/';
+    const cwd = fs.existsSync(requestedCwd) ? requestedCwd : (process.env.HOME || '/');
+
     const proc = pty.spawn(shell, [], {
       name: 'xterm-256color',
-      cols: options.cols,
-      rows: options.rows,
-      cwd: options.cwd || process.env.HOME || '/',
-      env: {
-        ...Object.fromEntries(
-          Object.entries(process.env).filter(([k]) => k !== 'CLAUDECODE')
-        ),
-        TERM: 'xterm-256color',
-        COLORTERM: 'truecolor',
-        AIRPORT: '1',
-        AIRPORT_STATUS_FILE: statusFile,
-      } as Record<string, string>,
+      cols: options.cols || 80,
+      rows: options.rows || 24,
+      cwd,
+      env: Object.fromEntries(
+        Object.entries({
+          ...process.env,
+          TERM: 'xterm-256color',
+          COLORTERM: 'truecolor',
+          AIRPORT: '1',
+          AIRPORT_STATUS_FILE: statusFile,
+        }).filter(([k, v]) => k !== 'CLAUDECODE' && v !== undefined)
+      ) as Record<string, string>,
     });
 
     proc.onData((data) => onData(id, data));
